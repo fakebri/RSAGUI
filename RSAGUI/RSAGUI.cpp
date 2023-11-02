@@ -200,7 +200,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             E = pubkey[0];
             n = pubkey[1];
 
-            std::wstring encrypt_text = std::to_wstring(RSAEnc(std::stoull(raw_text),E,n));
+            std::vector<int> raw_text_nums;
+
+            // 将字符串中的每个字符转换为ASCII码并存储在整数数组中 
+            // and encrypt
+            for (wchar_t c : raw_text) {
+                int asciiValue = static_cast<int>(c);
+                asciiValue = RSAEnc(asciiValue, E, n);
+                raw_text_nums.push_back(asciiValue);
+            }
+
+            std::wstring encrypt_text;
+            for (int i = 0; i < raw_text_nums.size(); i++) {
+                encrypt_text += std::to_wstring(raw_text_nums[i]);
+                if (i < raw_text_nums.size() - 1) {
+                    encrypt_text +=TEXT( ",");
+                }
+            }
 
             SetWindowText(hEncrypt, encrypt_text.c_str());
 
@@ -211,7 +227,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             std::wstring encrypt_text(GetEditText(hEncrypt));
             std::wstring private_key(GetEditText(hPrivateKey));
 
-            // excat
+            // 提取私钥
             std::vector<int> pubkey = extractNumbers(private_key.c_str());
 
             bool pause = true;
@@ -220,7 +236,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             q = pubkey[2];
             n = p * q;
 
-            std::wstring decrypt_text = std::to_wstring(RSAEnc(std::stoull(encrypt_text), D, n));
+
+            std::vector<int> wstringVector;
+            std::wstring current;
+
+            for (wchar_t ch : encrypt_text) {
+                if (ch == L',') {
+                    int test = std::stoi(current);
+                    //wstringVector.push_back(std::stoi(current));
+                    wstringVector.push_back(test);
+                    current.clear();
+                }
+                else {
+                    current += ch;
+                }
+            }
+
+            wstringVector.push_back(std::stoi(current));
+            
+            std::wstring decrypt_text;
+
+            for (int c : wstringVector) {
+                int asciiValue = RSAEnc(c, D, n);
+                asciiValue = static_cast<wchar_t>(asciiValue);
+                decrypt_text.push_back(asciiValue);
+            }
 
             SetWindowText(hRaw, decrypt_text.c_str());
             
